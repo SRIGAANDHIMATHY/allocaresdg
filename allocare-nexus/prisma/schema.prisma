@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Household {
+  id                 String   @id @default(cuid())
+  name               String
+  credits            Float    @default(100)
+  povertyIndex       Float    @default(0.5)
+  laborHours         Float    @default(0)
+  centralityScore    Float    @default(0.5)
+  shockExposureRisk  Float    @default(0.3)
+  creditDeficitRatio Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  transfersSent     Transfer[] @relation("TransferFrom")
+  transfersReceived Transfer[] @relation("TransferTo")
+  bids              Bid[]
+  logs              SystemLog[]
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  reward      Float
+  category    String
+  status      String   @default("open")
+  allocated   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bids        Bid[]
+}
+
+model Bid {
+  id              String    @id @default(cuid())
+  amount          Float
+  allocationScore Float
+  timestamp       DateTime  @default(now())
+
+  household       Household @relation(fields: [householdId], references: [id])
+  householdId     String
+
+  task            Task      @relation(fields: [taskId], references: [id])
+  taskId          String
+}
+
+model Transfer {
+  id          String    @id @default(cuid())
+  amount      Float
+  aiSuggested Boolean   @default(false)
+  timestamp   DateTime  @default(now())
+
+  from        Household @relation("TransferFrom", fields: [fromId], references: [id])
+  fromId      String
+
+  to          Household @relation("TransferTo", fields: [toId], references: [id])
+  toId        String
+}
+
+model SystemLog {
+  id          String    @id @default(cuid())
+  type        String
+  message     String
+  timestamp   DateTime  @default(now())
+
+  household   Household? @relation(fields: [householdId], references: [id])
+  householdId String?
+}
+
+model PovertyTrendPoint {
+  id                  String   @id @default(cuid())
+  cycle               Int
+  povertyRate         Float
+  extremePovertyCount Int
+  resilienceScore     Float
+  avgPovertyIndex     Float
+  recordedAt          DateTime @default(now())
+}
